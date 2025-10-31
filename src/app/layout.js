@@ -1,7 +1,5 @@
 import './globals.css';
 import { Inter_Tight } from "next/font/google";
-
-
 const interTight = Inter_Tight({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -12,7 +10,6 @@ export const metadata = {
   title: 'Landing Page',
   description: 'Basic Next.js Landing Page',
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
