@@ -1,10 +1,9 @@
-// src/components/Header.jsx
 "use client";
 import React from "react";
 
 export default function Header({ active, setActive }) {
   const girlColor = "#EB473D"; // red
-  const boyColor = "#0047FF";  // blue
+  const boyColor = "#0047FF"; // blue
 
   return (
     <header className="pt-[42px]">
@@ -43,21 +42,25 @@ export default function Header({ active, setActive }) {
               role="tab"
               aria-pressed={active === "girls"}
               onClick={() => setActive("girls")}
-              className="relative z-10 w-[110px] sm:w-[110px] md:w-[110px] px-2 py-1.5 rounded-full  text-[13px] md:text-[14px] font-light flex items-center justify-center gap-2 focus:outline-none transition-colors"
+              className="relative z-10 w-[110px] sm:w-[110px] md:w-[110px] px-2 py-1.5 rounded-full text-[13px] md:text-[14px] font-light flex items-center justify-center gap-2 focus:outline-none transition-colors"
             >
               <span className={active === "girls" ? "text-white" : "text-[#606476]"}>
                 For Girls
               </span>
 
-              <span
+              {/* Replaced glyph with SVG from public folder. Using CSS filter to make the SVG white when active. */}
+              <img
+                src="/GirlButton.svg"
+                alt=""
                 aria-hidden="true"
-                className="text-base"
+                className="w-4 h-4 md:w-5 md:h-5"
                 style={{
-                  color: active === "girls" ? "#ffffff" : girlColor,
+                  // When active, we force the icon to appear white by inverting a darkened image.
+                  // This works reliably for single-color SVGs. If your SVG uses multiple colors and
+                  // you want to guarantee a white icon, consider using the mask approach (commented below).
+                  filter: active === "girls" ? "brightness(0) invert(1)" : "none",
                 }}
-              >
-                ♀
-              </span>
+              />
             </button>
 
             {/* Boys button */}
@@ -71,15 +74,15 @@ export default function Header({ active, setActive }) {
                 For Boys
               </span>
 
-              <span 
+              <img
+                src="/BoyButton.svg"
+                alt=""
                 aria-hidden="true"
-                className="text-base"
+                className="w-4 h-4 md:w-5 md:h-5"
                 style={{
-                  color: active === "boys" ? "#ffffff" : boyColor,
+                  filter: active === "boys" ? "brightness(0) invert(1)" : "none",
                 }}
-              >
-                ♂
-              </span>
+              />
             </button>
           </div>
         </div>
@@ -87,3 +90,29 @@ export default function Header({ active, setActive }) {
     </header>
   );
 }
+
+/*
+Alternative (more robust) technique if you need to guarantee single-color icons regardless of original SVG colors:
+
+- Use the SVG as a CSS mask so the element's background color becomes the icon color.
+
+Example (tailwind + inline style):
+
+<span
+  aria-hidden
+  className="w-5 h-5 inline-block"
+  style={{
+    WebkitMaskImage: 'url(/GirlButton.svg)',
+    maskImage: 'url(/GirlButton.svg)',
+    backgroundColor: active === 'girls' ? '#ffffff' : girlColor, // or '#606476' for inactive
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskSize: 'contain',
+    maskSize: 'contain',
+    WebkitMaskPosition: 'center',
+    maskPosition: 'center',
+  }}
+/>
+
+This approach paints the SVG shapes with the backgroundColor you set and is ideal when you need full control over the icon color.
+*/
