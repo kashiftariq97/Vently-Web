@@ -33,7 +33,7 @@ export default function HomePage() {
 
       {/* Rest of page */}
       <main className="flex-1">
-        <section className="mt-[20px] md:mt-[92px]">
+        <section className="mt-[21px] md:mt-[92px]">
           <Showcase active={active} />
         </section>
       </main>

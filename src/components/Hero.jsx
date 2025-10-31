@@ -1,18 +1,55 @@
-// src/components/Hero.jsx
 "use client";
 import React, { useState } from "react";
 
-export default function Hero({ active = "girls" }) {
-  const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState("");
+async function postToWaitlist(email) {
+  const res = await fetch("/api/waitlist", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  });
 
-  function handleJoin(e) {
-    e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setMsg("Please enter a valid email address.");
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.message || res.statusText || "Failed to join waitlist");
+  return json;
+}
+
+export function useWaitlist() {
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ message: "", receipt: null, variant: "idle" });
+
+  async function join(email) {
+    if (loading) return;
+    setStatus({ message: "", receipt: null, variant: "idle" });
+
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      setStatus({ message: "Please enter a valid email address.", receipt: null, variant: "error" });
       return;
     }
-    setMsg("Thanks! You're on the waitlist.");
+
+    try {
+      setLoading(true);
+      const data = await postToWaitlist(email.toLowerCase().trim());
+      const receipt = data?.receipt ?? null;
+      const message = data?.message ?? (receipt ? `Thanks — your confirmation id is ${receipt}.` : `Thanks! We've received your email.`);
+      setStatus({ message, receipt, variant: "success" });
+    } catch (err) {
+      setStatus({ message: err?.message || "Something went wrong. Please try again.", receipt: null, variant: "error" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { loading, status, join, setStatus };
+}
+
+export default function Hero({ active = "girls" }) {
+  const [email, setEmail] = useState("");
+  const { loading, status, join, setStatus } = useWaitlist();
+
+  async function handleJoin(e) {
+    e.preventDefault();
+    await join(email);
   }
 
   const isBoy = active === "boys";
@@ -41,29 +78,37 @@ export default function Hero({ active = "girls" }) {
         </p>
 
         {/* EMAIL PILL */}
-        <form onSubmit={handleJoin} className="mt-9 flex items-center justify-center">
+        <form onSubmit={handleJoin} className="mt-9 flex items-center justify-center" noValidate>
           <label htmlFor="email" className="sr-only text-[#474747]">Enter Your Email Address</label>
 
           <div className="relative w-full max-w-[650px]">
             <div className="rounded-full border border-[#D5D5D5]">
               <input
-                id="email"
+                id="hero-email"
+                name="email"
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setMsg(""); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (status?.message) setStatus({ message: "", receipt: null, variant: "idle" });
+                }}
                 placeholder="Enter Your Email Address"
                 aria-label="Email address"
                 className="w-full rounded-full bg-transparent text-[12px] sm:text-[12px] md:text-[16px] placeholder-[#474747] text-black px-6 py-5 pr-40 focus:outline-none"
+                required
+                aria-required="true"
               />
             </div>
 
             {/* CTA button (color changes with theme) */}
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-3 rounded-full text-white px-2 md:px-4 py-2.5 text-base font-light shadow-md hover:brightness-95 transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-3 rounded-full text-white px-2 md:px-4 py-2.5 text-base font-light shadow-md hover:brightness-95 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               style={{ background: ctaColor }}
+              disabled={loading}
+              aria-busy={loading}
             >
-              <span className="whitespace-nowrap text-[12px] md:text-[16px]">Join the Waitlist</span>
+              <span className="whitespace-nowrap text-[12px] md:text-[16px]">{loading ? 'Joining...' : 'Join the Waitlist'}</span>
               <span aria-hidden="true">
                 <img src="/button.svg" alt="" className="inline w-5 h-5" />
               </span>
@@ -71,7 +116,10 @@ export default function Hero({ active = "girls" }) {
           </div>
         </form>
 
-        {msg && <p className="mt-4 text-sm text-slate-700">{msg}</p>}
+        {/* <-- Fixed: use status.message instead of undefined `msg` --> */}
+        <p className="mt-4 text-sm text-slate-700" aria-live="polite">
+          {status?.message}
+        </p>
       </div>
     </div>
   );
